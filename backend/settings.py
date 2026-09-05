@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-8goyn)0eo598!h((jgi9ku+j=96w1==)6&@qj1gc^@trsud_#w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['tutorflow-u40s.onrender.com', '.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
