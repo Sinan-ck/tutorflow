@@ -7,7 +7,7 @@ leaves a session half-updated.
 """
 import json
 import logging
-
+import time
 from google import genai
 from google.genai import types
 from django.conf import settings
@@ -28,21 +28,40 @@ def _client():
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
+import time
+
 def _call(system_prompt: str, user_prompt: str) -> dict:
-    try:
-        client = _client()
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                response_mime_type="application/json",
-                max_output_tokens=1500,
-            ),
-        )
-    except Exception as exc:
-        logger.exception("Gemini API call failed")
-        raise AIError(f"The AI request failed: {exc}") from exc
+    client = _client()
+    max_retries = 3
+    last_exc = None
+
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    max_output_tokens=1500,
+                ),
+            )
+            break
+        except Exception as exc:
+            last_exc = exc
+            is_retryable = "503" in str(exc) or "UNAVAILABLE" in str(exc)
+            if is_retryable and attempt < max_retries - 1:
+                wait = 2 ** attempt  # 1s, 2s, 4s
+                logger.warning(
+                    "Gemini API returned 503, retrying in %ss (attempt %s/%s)",
+                    wait, attempt + 1, max_retries,
+                )
+                time.sleep(wait)
+                continue
+            logger.exception("Gemini API call failed")
+            raise AIError(f"The AI request failed: {exc}") from exc
+    else:
+        raise AIError(f"The AI request failed after {max_retries} attempts: {last_exc}")
 
     raw_text = (response.text or "").strip()
     cleaned = raw_text.strip("`")
