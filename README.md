@@ -72,6 +72,8 @@ immediately.
 - **Email:** Django's console email backend for local/demo use (see "what's not built")
 
 ## Database schema
+
+```
 User (accounts.User, extends Django's AbstractUser)
 ├── id
 ├── username, password (hashed), email, etc. — standard Django auth fields
