@@ -26,7 +26,7 @@ to see their own upcoming sessions, past notes, and AI-generated homework.
 - Student view: upcoming sessions, read-only notes from past sessions, homework
 - Email notification when a tutor schedules a session (Django console backend — prints
   the email to the server terminal; confirmed firing correctly on session creation)
-- Graceful AI failure handling: a failed/invalid-key Gemini call returns a clean error
+- Graceful AI failure handling: a failed/invalid-key Groq call returns a clean error
   message to the frontend instead of a 500, and never leaves a session half-updated
 
 **Not built:**
@@ -45,7 +45,7 @@ the state machine and the clash-detection logic, since those are the two places 
 regression would be most damaging. I'd add optimistic UI updates on the notes autosave so
 the textarea never feels laggy on a slow connection. I'd paginate the tutor's session list
 once a tutor has more than a handful of students. Finally, I'd add rate-limiting around
-the AI endpoints so a tutor can't accidentally exhaust the Gemini quota by repeatedly
+the AI endpoints so a tutor can't accidentally exhaust the Groq quota by repeatedly
 clicking "regenerate plan."
 
 ## Test logins
@@ -243,9 +243,9 @@ In testing, this prompt correctly identified that Alex's friction was specifical
 division-based equations and word-problem translation, not a generic "needs more
 practice" statement.
 
-All three calls request `response_mime_type="application/json"` from Gemini so the model
+All three calls request JSON-mode output (`response_format={"type": "json_object"}`) from Groq so the model
 is constrained to valid JSON at the API level, plus a defensive parse in `_call()` for
-edge cases (stray markdown fences). If the Gemini call throws for any reason (bad key,
+edge cases (stray markdown fences). If the Groq call throws for any reason (bad key,
 network issue, rate limit), `AIError` is caught at the view layer and returned as an HTTP
 502 with a readable message — the session row itself is never partially updated (e.g. the
 `COMPLETED → AI_REVIEWED` transition only happens *after* a successful review is saved).
@@ -264,8 +264,8 @@ pip install -r requirements.txt
 cat > .env << 'EOF'
 DJANGO_SECRET_KEY=change-me-to-a-long-random-string
 DJANGO_DEBUG=True
-GEMINI_API_KEY=your-real-gemini-key-here
-GEMINI_MODEL=gemini-2.0-flash
+GROQ_API_KEY=your-real-groq-key-here
+GROQ_MODEL=openai/gpt-oss-120b
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 EOF
 
@@ -300,7 +300,7 @@ Frontend runs at `http://localhost:3000`.
    `pip install -r requirements.txt && python manage.py migrate && python manage.py seed_demo && python manage.py collectstatic --noinput`
 4. Start command: `gunicorn backend.wsgi:application`
 5. Environment variables: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`,
-   `DJANGO_ALLOWED_HOSTS=<your-render-domain>`, `GEMINI_API_KEY`, `GEMINI_MODEL`,
+   `DJANGO_ALLOWED_HOSTS=<your-render-domain>`, `GROQ_API_KEY`, `GROQ_MODEL`,
    `CORS_ALLOWED_ORIGINS=<your-vercel-frontend-url>`.
 6. Add a free Postgres instance on Render and set `DATABASE_URL` — otherwise SQLite runs
    on Render's ephemeral disk and resets on every redeploy.
