@@ -8,8 +8,8 @@ leaves a session half-updated.
 import json
 import logging
 import time
-from google import genai
-from google.genai import types
+
+from groq import Groq
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,13 @@ class AIError(Exception):
 
 
 def _client():
-    if not settings.GEMINI_API_KEY:
+    if not settings.GROQ_API_KEY:
         raise AIError(
-            "GEMINI_API_KEY is not set on the server. Add it to your .env "
+            "GROQ_API_KEY is not set on the server. Add it to your .env "
             "to enable AI features."
         )
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+    return Groq(api_key=settings.GROQ_API_KEY)
 
-
-import time
 
 def _call(system_prompt: str, user_prompt: str) -> dict:
     client = _client()
@@ -37,33 +35,33 @@ def _call(system_prompt: str, user_prompt: str) -> dict:
 
     for attempt in range(max_retries):
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json",
-                    max_output_tokens=1500,
-                ),
+            response = client.chat.completions.create(
+                model=settings.GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                max_tokens=1500,
             )
+            raw_text = (response.choices[0].message.content or "").strip()
             break
         except Exception as exc:
             last_exc = exc
-            is_retryable = "503" in str(exc) or "UNAVAILABLE" in str(exc)
+            is_retryable = "429" in str(exc) or "503" in str(exc) or "rate" in str(exc).lower()
             if is_retryable and attempt < max_retries - 1:
-                wait = 2 ** attempt  # 1s, 2s, 4s
+                wait = 2 ** attempt
                 logger.warning(
-                    "Gemini API returned 503, retrying in %ss (attempt %s/%s)",
+                    "Groq API rate/availability issue, retrying in %ss (attempt %s/%s)",
                     wait, attempt + 1, max_retries,
                 )
                 time.sleep(wait)
                 continue
-            logger.exception("Gemini API call failed")
+            logger.exception("Groq API call failed")
             raise AIError(f"The AI request failed: {exc}") from exc
     else:
         raise AIError(f"The AI request failed after {max_retries} attempts: {last_exc}")
 
-    raw_text = (response.text or "").strip()
     cleaned = raw_text.strip("`")
     if cleaned.startswith("json"):
         cleaned = cleaned[4:]
