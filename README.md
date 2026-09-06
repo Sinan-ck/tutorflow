@@ -67,7 +67,7 @@ immediately.
   avoid colliding with Django's built-in `django.contrib.sessions` app)
 - **Database:** SQLite for local dev; swaps to Postgres via `DATABASE_URL` for production
 - **Frontend:** Next.js (App Router) + Tailwind v4, plain fetch calls to the Django API
-- **AI:** Google Gemini (`gemini-2.0-flash`), called only from the backend — the API key
+- **AI:** Google Gemini (`gemini-3.6-flash`), called only from the backend — the API key
   never reaches the browser
 - **Email:** Django's console email backend for local/demo use (see "what's not built")
 
