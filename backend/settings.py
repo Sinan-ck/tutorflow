@@ -177,3 +177,5 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # --- Groq ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+ 
