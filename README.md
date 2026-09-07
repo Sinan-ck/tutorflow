@@ -4,6 +4,15 @@ A session platform for online tutors. Tutors manage students, schedule and run s
 and use AI to plan sessions before they start and review them afterwards. Students log in
 to see their own upcoming sessions, past notes, and AI-generated homework.
 
+## Live Demo
+
+- **App:** https://tutorflow-psi.vercel.app
+- **API:** https://tutorflow-u40s.onrender.com/api
+- Test logins: see "Test logins" section below
+
+Note: the backend is on Render's free tier, which spins down after inactivity —
+the first request after idle time can take 30-50 seconds to wake up.
+
 ## What works / what doesn't (read this first)
 
 **Working, end to end — tested manually via curl and in-browser:**
@@ -307,7 +316,7 @@ Frontend runs at `http://localhost:3000`.
 
 **Frontend → Vercel:**
 1. New Project, root directory `frontend`. Framework preset: Next.js (auto-detected).
-2. Environment variable: `NEXT_PUBLIC_API_URL=https://<your-render-backend-domain>/api`.
+2. Environment variable: `NEXT_PUBLIC_API_URL=https://tutorflow-u40s.onrender.com/api` (or your own Render URL if redeploying).
 3. Deploy. Once live, go back to Render and set `CORS_ALLOWED_ORIGINS` to this exact
    Vercel URL, then redeploy the backend so CORS actually allows the real frontend origin.
 
